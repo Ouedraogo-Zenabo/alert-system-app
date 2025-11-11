@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       //  Gestion des routes
       routes: {
         "/": (context) => const LoginPage(),
-        "/new-alert-step1": (context) => const NewAlertStep1Page(),
+        "/new-alert-step1": (context) => NewAlertStepsPage(),
       },
 
       //  Définit la page par défaut

@@ -49,7 +49,18 @@ class _LoginFormState extends State<LoginForm> {
     return Form(
       key: _formKey,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Logo en haut du formulaire
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24.0),
+            child: Image.network(
+              'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQv0QnySrg0ZxVu2txgj5_n6CbzAusWVdH_VA&s',
+              width: 120,
+              height: 120,
+            ),
+          ),
+
           //  Champ de l’utilisateur
           TextFormField(
             controller: _usernameCtrl,
@@ -71,17 +82,28 @@ class _LoginFormState extends State<LoginForm> {
 
           const SizedBox(height: 24),
 
-          //  Bouton de connexion
-          ElevatedButton(
-            onPressed: _loading ? null : _handleLogin,
-            child: _loading
-                ? const CircularProgressIndicator(color: Colors.white)
-                : const Text("Se connecter"),
+          //  Bouton de connexion en bleu
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _loading ? null : _handleLogin,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue, // <-- bouton bleu
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: _loading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      "Se connecter",
+                      style: TextStyle(fontSize: 16),
+                    ),
+            ),
           ),
         ],
       ),
     );
   }
 }
+
 
 
