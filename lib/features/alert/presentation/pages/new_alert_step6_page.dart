@@ -5,9 +5,17 @@ import '../../domain/alert_model.dart';
 
 class NewAlertStep6Page extends StatelessWidget {
   final AlertModel alert;
-
+  static const List<String> steps = [
+    "Évènement",
+    "Localisation",
+    "Rapporteur",
+    "Destinataires",
+    "Récapitulatif",
+    "Soumission",
+  ];
   const NewAlertStep6Page({super.key, required this.alert});
-
+  
+  
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -16,6 +24,7 @@ class NewAlertStep6Page extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Nouvelle Alerte - Étape 6 (Récapitulatif)"),
         centerTitle: true,
+        backgroundColor: AppColors.primary,
       ),
 
       body: SingleChildScrollView(
@@ -26,6 +35,48 @@ class NewAlertStep6Page extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
+            // --- Indicateur des 6 étapes ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: steps.asMap().entries.map((entry) {
+                  int stepNumber = entry.key + 1;
+                  String label = entry.value;
+
+                  Color circleColor;
+                  if (stepNumber < 6) {
+                    circleColor = Colors.green;
+                  } else if (stepNumber == 6) {
+                    circleColor = AppColors.primary;
+                  } else {
+                    circleColor = Colors.white;
+                  }
+
+                  return Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: circleColor,
+                        child: Text(
+                          "$stepNumber",
+                          style: TextStyle(
+                            color: stepNumber == 6 ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+
+
+
             _buildSectionEvenement(),
             const SizedBox(height: 20),
 

@@ -95,7 +95,11 @@ class _LoginFormState extends State<LoginForm> {
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text(
                       "Se connecter",
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      ),
+                      
                     ),
             ),
           ),

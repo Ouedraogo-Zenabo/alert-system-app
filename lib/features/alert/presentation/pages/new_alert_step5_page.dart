@@ -160,9 +160,9 @@ void _onSuivant() {
                   String label = entry.value;
 
                   Color circleColor;
-                  if (stepNumber < 4) {
+                  if (stepNumber < 5) {
                     circleColor = Colors.green;
-                  } else if (stepNumber == 4) {
+                  } else if (stepNumber == 5) {
                     circleColor = AppColors.primary;
                   } else {
                     circleColor = Colors.white;
@@ -176,7 +176,7 @@ void _onSuivant() {
                         child: Text(
                           "$stepNumber",
                           style: TextStyle(
-                            color: stepNumber == 4 ? Colors.white : Colors.black,
+                            color: stepNumber == 5 ? Colors.white : Colors.black,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
