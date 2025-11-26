@@ -615,7 +615,14 @@ import '../../../../core/widgets/coustom_button_step1.dart';
 import 'new_alert_step2_page.dart';
 
 class NewAlertStep1Page extends StatefulWidget {
-  const NewAlertStep1Page({super.key});
+  
+
+  final AlertModel alert;
+
+  const NewAlertStep1Page({
+    super.key,
+    required this.alert,
+  });
 
   @override
   _NewAlertStep1PageState createState() => _NewAlertStep1PageState();

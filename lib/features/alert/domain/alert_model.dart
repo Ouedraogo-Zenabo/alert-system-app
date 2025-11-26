@@ -66,7 +66,9 @@ class AlertModel {
   bool sendSMS = false;
   bool sendEmail = false;
   bool sendPush = false;
-
+  int? nbStructures;
+  int? nbAutorites;
+  int? nbEquipes;
   // Destinataire personnalisé
   String? contactNom;
   String? contactTelephone;
@@ -77,7 +79,7 @@ class AlertModel {
   String? emailMessage;
   final String? evenement; // Type d’événement (inondation, attaque, accident, etc.)
   final String? localisation;
-
+  int? totalDestinataires;
 
 
   
@@ -143,6 +145,9 @@ class AlertModel {
     this.emailMessage,
     this.evenement,
     this.localisation,
+    this.nbAutorites,
+    this.nbEquipes,
+    this.nbStructures,
 
     
 
@@ -153,7 +158,60 @@ class AlertModel {
     this.statut,
     this.source,
   });
-
+  
+  // Add the toJson method
+  Map<String, dynamic> toJson() {
+    return {
+      // Replace with your actual properties
+      'region': region,
+      'province': province,
+      'commune': commune,
+      'zone': zone,
+      'coordonnees': coordonnees,
+      'village': village,
+      'date': date,
+      'time': time,
+      'typeEvenement': typeEvenement,
+      'facteursDeclencheurs': facteursDeclencheurs,
+      'ampleur': ampleur,
+      'periode': periode,
+      'dureeEstimee': dureeEstimee,
+      'description': description,
+      'consequencesObservees': consequencesObservees,
+      'nbPersonnesAffectees': nbPersonnesAffectees,
+      'nbPersonnesDeplacees': nbPersonnesDeplacees,
+      'nbDeces': nbDeces,
+      'nbBlesses': nbBlesses,
+      'infrastructuresTouchees': infrastructuresTouchees,
+      'besoinsUrgents': besoinsUrgents,
+      'impactEconomique': impactEconomique,
+      'photos': photos,
+      'rapporteurNom': rapporteurNom,
+      'rapporteurPrenom': rapporteurPrenom,
+      'rapporteurTelephone': rapporteurTelephone,
+      'rapporteurEmail': rapporteurEmail,
+      'fonction': fonction,
+      'structure': structure,
+      'languePreferee': languePreferee,
+      'groupesDestinataires': groupesDestinataires,
+      'sendSMS': sendSMS,
+      'sendEmail': sendEmail,
+      'sendPush': sendPush,
+      'contactNom': contactNom,
+      'contactTelephone': contactTelephone,
+      'contactEmail': contactEmail,
+      'smsMessage': smsMessage,
+      'emailMessage': emailMessage,
+      'evenement': evenement,
+      'localisation': localisation,
+      'totalDestinataires': totalDestinataires,
+      'id': id,
+      'dateCreation': dateCreation?.toIso8601String(),
+      'statut': statut,
+      'source': source,
+    };
+  }
+  
   // ============================
   // Méthodes utilitaires
   // ============================

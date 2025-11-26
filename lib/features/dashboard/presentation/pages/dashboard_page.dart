@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/alert/domain/alert_model.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
 
  // Import de la page de création d'alerte
 
 class DashboardPage extends StatelessWidget {
+  
   const DashboardPage({super.key});
-
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +73,8 @@ class DashboardPage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const NewAlertStep1Page(),
+                      builder: (context) => NewAlertStep1Page(alert: AlertModel()),
+
                     ),
                   );
                 },

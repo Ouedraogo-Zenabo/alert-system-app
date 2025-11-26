@@ -6,6 +6,12 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
+import 'package:mobile_app/features/alert/presentation/pages/new_alert_step2_page.dart';
+import 'package:mobile_app/features/alert/presentation/pages/new_alert_step3_page.dart';
+import 'package:mobile_app/features/alert/presentation/pages/new_alert_step4_page.dart';
+//import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
+//import 'package:mobile_app/features/alert/presentation/pages/new_alert_step3_page.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step6_page.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -34,6 +40,22 @@ class _NewAlertStep5PageState extends State<NewAlertStep5Page> {
     "Autorités locales": true,
     "Équipes d’intervention": true,
   };
+
+  final Map<String, int> recipientsCount = {
+    "Structures partenaires": 5,
+    "Autorités locales": 4,
+    "Équipes d’intervention": 3,
+  };
+  int getTotalSelectedRecipients() {
+  int total = 0;
+  groupsSelected.forEach((group, isSelected) {
+    if (isSelected) {
+      total += recipientsCount[group]!;
+    }
+  });
+    return total;
+  }
+
 
   // --- Destinataire personnalisé ---
   final TextEditingController nameCtrl = TextEditingController();
@@ -125,13 +147,71 @@ void _onSuivant() {
   widget.alert.smsMessage = smsMessageCtrl.text;
   widget.alert.emailMessage = emailMessageCtrl.text;
 
- // --- Aller à l’étape suivante ---
+
+    //int total = getTotalSelectedRecipients();
+  AlertModel alert = widget.alert;
+  // Calcul du nombre de destinataires
+  // --------------------------
+  alert.nbStructures = groupsSelected["Structures partenaires"]! 
+      ? recipientsCount["Structures partenaires"] 
+      : 0;
+  alert.nbAutorites = groupsSelected["Autorités locales"]! 
+      ? recipientsCount["Autorités locales"] 
+      : 0;
+  alert.nbEquipes = groupsSelected["Équipes d’intervention"]! 
+      ? recipientsCount["Équipes d’intervention"] 
+      : 0;
+
+  // Total
+  alert.totalDestinataires = alert.nbStructures! + alert.nbAutorites! + alert.nbEquipes!;
+  // --- Aller à l’étape suivante ---
   Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (_) => NewAlertStep6Page(alert: widget.alert),
+      builder: (_) => NewAlertStep6Page(
+        alert: widget.alert,
+        
+
+        // ---- Modifier Localisation → Étape 1 ----
+        onEditLocalisation: () {
+          Navigator.pop(context);  
+          Navigator.push(context,
+            MaterialPageRoute(builder: (_) => NewAlertStep1Page(alert: widget.alert)));
+        },
+
+        // ---- Modifier Événement → Étape 2 ----
+        onEditEvent: () {
+          Navigator.pop(context);
+          Navigator.push(context,
+            MaterialPageRoute(builder: (_) => NewAlertStep2Page(alert: widget.alert)));
+        },
+
+        // ---- Modifier Conséquences → Étape 3 ----
+        onEditConsequences: () {
+          Navigator.pop(context);
+          Navigator.push(context,
+            MaterialPageRoute(builder: (_) => NewAlertStep3Page(alert: widget.alert)));
+        },
+
+        // ---- Modifier Rapporteur → Étape 4 ----
+        onEditRapporteur: () {
+          Navigator.pop(context);
+          Navigator.push(context,
+            MaterialPageRoute(builder: (_) => NewAlertStep4Page(alert: widget.alert)));
+        },
+
+        // ---- Modifier Destinataires → Étape 5 ----
+        onEditDestinataires: () {
+          Navigator.pop(context);
+          Navigator.push(context,
+            MaterialPageRoute(builder: (_) => NewAlertStep5Page(alert: widget.alert)));
+        },
+      ),
     ),
   );
+
+
+
 }
 
 
@@ -238,7 +318,7 @@ void _onSuivant() {
 
             _buildRecipientGroup(
               label: "Structures partenaires",
-              sublabel: "5 destinataires",
+              sublabel: "${recipientsCount["Structures partenaires"]} destinataires",
               icon: Icons.apartment,
               selected: groupsSelected["Structures partenaires"]!,
               onChanged: (v) =>
@@ -249,7 +329,7 @@ void _onSuivant() {
 
             _buildRecipientGroup(
               label: "Autorités locales",
-              sublabel: "4 destinataires",
+              sublabel: "${recipientsCount["Autorités locales"]} destinataires",
               icon: Icons.location_pin,
               selected: groupsSelected["Autorités locales"]!,
               onChanged: (v) =>
@@ -260,12 +340,14 @@ void _onSuivant() {
 
             _buildRecipientGroup(
               label: "Équipes d’intervention",
-              sublabel: "3 destinataires",
+              sublabel: "${recipientsCount["Équipes d’intervention"]} destinataires",
               icon: Icons.group,
               selected: groupsSelected["Équipes d’intervention"]!,
               onChanged: (v) =>
                   setState(() => groupsSelected["Équipes d’intervention"] = v),
             ),
+            
+            
 
             const SizedBox(height: 25),
 
@@ -457,3 +539,9 @@ void _onSuivant() {
 
 
 }
+
+
+
+
+
+

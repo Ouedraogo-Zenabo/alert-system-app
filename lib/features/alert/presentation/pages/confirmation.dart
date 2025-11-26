@@ -1,17 +1,20 @@
-/*import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
+import 'package:flutter/material.dart';
+//import '../../../../core/theme/app_colors.dart';
+//import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/alert_model.dart';
+
 
 /// ------------------------------------------------------------
 /// DIALOG : Confirmation d’envoi de l’alerte
 /// ------------------------------------------------------------
-Future<void> showConfirmationDialog(BuildContext context, AlertModel alert) {
+Future<void> showConfirmationDialog(BuildContext context, AlertModel alert, int totalDestinataires) {
   // Formatage du message (tu peux adapter selon ton modèle)
+
+
   final message = """
-    [ALERTE ${alert.type?.toUpperCase() ?? "N/A"}] ${alert.evenement ?? ''} à ${alert.localisation ?? ''}. 
-    ${alert.nombrePersonnes ?? ''} personnes affectées. Intervention urgente requise.
-    Contact: ${alert.contact ?? ''}
+    [ALERTE ${alert.typeEvenement?.toUpperCase() ?? "N/A"}] ${alert.evenement ?? ''} à ${alert.localisation ?? ''}. 
+    ${alert.nbPersonnesAffectees ?? ''} personnes affectées. Intervention urgente requise.
+    Contact: ${alert.rapporteurTelephone ?? ''}
     """;
 
   return showDialog(
@@ -48,7 +51,7 @@ Future<void> showConfirmationDialog(BuildContext context, AlertModel alert) {
 
                 // Sous-titre
                 Text(
-                  "L’alerte sera envoyée par SMS à ${alert.destinataires?.length ?? 0} destinataires",
+                  "L’alerte sera envoyée par SMS à $totalDestinataires destinataires",
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey[700],
@@ -93,8 +96,8 @@ Future<void> showConfirmationDialog(BuildContext context, AlertModel alert) {
                 const SizedBox(height: 15),
 
                 // Liste des destinataires
-                Text(
-                  "${alert.destinataires?.length ?? 0} destinataires : ${alert.destinataires?.join(', ') ?? ''}",
+                Text( 
+                  "$totalDestinataires destinataires",
                   style: TextStyle(
                     color: Colors.grey[700],
                     fontSize: 12,
@@ -119,10 +122,16 @@ Future<void> showConfirmationDialog(BuildContext context, AlertModel alert) {
 
                     // Bouton "Confirmer l'envoi"
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
+                      onPressed: () async {
+                        Navigator.pop(context); // Fermer la popup
+
                         // TODO: Appeler ton service d’envoi SMS
-                        // sendAlert(alert);
+                        // await sendAlert(alert);
+
+                        // 🔁 Redirection après envoi
+                        if (context.mounted) {
+                          Navigator.popUntil(context, (route) => route.isFirst);
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
@@ -142,6 +151,7 @@ Future<void> showConfirmationDialog(BuildContext context, AlertModel alert) {
                         ),
                       ),
                     ),
+
                   ],
                 )
               ],
@@ -152,4 +162,3 @@ Future<void> showConfirmationDialog(BuildContext context, AlertModel alert) {
     },
   );
 }
-*/
