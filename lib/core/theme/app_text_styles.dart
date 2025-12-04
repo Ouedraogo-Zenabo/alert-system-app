@@ -80,6 +80,7 @@ class AppTextStyles {
   static final TextStyle subtitle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
+    color: Colors.black87,
     //color: AppColors.textPrimary, // ensure AppColors.textPrimary exists
   );
   // 

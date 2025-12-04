@@ -21,7 +21,14 @@ class CustomButton extends StatelessWidget {
           backgroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-        child: Text(text),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
