@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
+//import 'app_colors.dart';
 class AppTextStyles {
   // Titre principal (grands titres)
   static const TextStyle titleLarge = TextStyle(

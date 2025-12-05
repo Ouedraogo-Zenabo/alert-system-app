@@ -146,20 +146,21 @@ class LoginForm extends StatefulWidget {
 
 class _LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final authRepository = AuthRepository();
 
   bool _loading = false;
 
-  void _handleLogin() {
+  void _handleLogin() async{
     if (_formKey.currentState!.validate()) {
       setState(() => _loading = true);
 
-      final username = _usernameCtrl.text;
+      final email = _emailCtrl.text;
       final password = _passwordCtrl.text;
 
-      bool isLogged = authRepository.login(username, password);
+      bool isLogged = await authRepository.login(email, password);
+
 
       if (isLogged) {
         Navigator.pushReplacement(
@@ -222,9 +223,9 @@ class _LoginFormState extends State<LoginForm> {
                     /// Champ Nom utilisateur
                     /// ----------------------------
                     TextFormField(
-                      controller: _usernameCtrl,
+                      controller: _emailCtrl,
                       decoration:
-                          const InputDecoration(labelText: "Nom d'utilisateur"),
+                          const InputDecoration(labelText: "Adresse mail"),
                       validator: (value) =>
                           value!.isEmpty ? "Champ obligatoire" : null,
                     ),

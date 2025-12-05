@@ -41,8 +41,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
       const AlertsListPage(),
       // ProfilePage nécessite userRepository et token -> on les passe
       ProfilePage(
-        userRepository: widget.userRepository,
-        token: widget.token,
+        //userRepository: widget.userRepository,
+        //token: widget.token,
       ),
     ];
 
