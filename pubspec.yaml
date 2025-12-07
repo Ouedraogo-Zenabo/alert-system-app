@@ -21,6 +21,7 @@ version: 1.0.0+1
 environment:
   sdk: ^3.9.2
 
+
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
@@ -30,6 +31,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  google_maps_flutter: ^2.9.0
+
+ 
+ 
   image_picker: ^1.2.1   # vérifie la dernière version sur pub.dev
   shared_preferences: ^2.0.17  # or latest
   # The following adds the Cupertino Icons font to your application.
@@ -47,6 +53,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

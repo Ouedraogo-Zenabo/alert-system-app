@@ -323,7 +323,9 @@ class _DashboardHome extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        NewAlertStep1Page(alert: AlertModel()), // Vérifie le constructeur
+                       NewAlertStep1Page(alert: AlertModel())
+
+
                   ),
                 );
               },

@@ -73,7 +73,9 @@ class MyApp extends StatelessWidget {
               userRepository: userRepository,
               token: "",
             ),
-        "/new-alert-step1": (context) => NewAlertStep1Page(alert: AlertModel()),
+        "/new-alert-step1": (context) => NewAlertStep1Page(alert: AlertModel())
+
+
       },
 
       initialRoute: "/",

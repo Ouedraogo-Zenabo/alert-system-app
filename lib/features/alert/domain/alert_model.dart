@@ -15,6 +15,13 @@ class AlertModel {
   String? village;
   String? date;
   String? time;
+/////////////
+  String? event;
+  String? eventType;
+  String? urgentNeeds;
+  String? localisatione1;
+  int? zoneId;
+
 
   // ============================
   // Étape 2 : Événement
@@ -102,6 +109,12 @@ class AlertModel {
     this.date,
     this.time,
     this.village,
+    ////////
+    this.event,
+    this.eventType,
+    this.urgentNeeds,
+    this.localisatione1,
+    this.zoneId,
 
     // Étape 2
     this.typeEvenement,
@@ -209,6 +222,14 @@ class AlertModel {
       'dateCreation': dateCreation?.toIso8601String(),
       'statut': statut,
       'source': source,
+
+
+      ///////etape1
+      "event": event,
+      "eventType": eventType,
+      "urgentNeeds": urgentNeeds,
+      "localisatione1": localisatione1,
+      "zoneId": zoneId,
     };
   }
   

@@ -670,7 +670,8 @@ class _NewAlertStep5PageState extends State<NewAlertStep5Page> {
           alert: widget.alert,
           onEditLocalisation: () {
             Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => NewAlertStep1Page(alert: widget.alert)));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => NewAlertStep1Page(alert: AlertModel())
+));
           },
           onEditEvent: () {
             Navigator.pop(context);
