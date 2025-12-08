@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
 import 'package:flutter/material.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'package:mobile_app/features/alert/domain/alert_model.dart';
-import 'features/alert/presentation/pages/new_alert_step1_page.dart';
+import 'features/alert/presentation/pages/new_alert_step1_page_fixed.dart';
 
 // IMPORTS POUR LE USER
 import 'package:mobile_app/features/user/data/sources/user_api_service.dart';
@@ -73,7 +73,7 @@ class MyApp extends StatelessWidget {
               userRepository: userRepository,
               token: "",
             ),
-        "/new-alert-step1": (context) => NewAlertStep1Page(alert: AlertModel())
+        "/new-alert-step1": (context) => NewAlertStep1PageFixed(alert: AlertModel())
 
 
       },

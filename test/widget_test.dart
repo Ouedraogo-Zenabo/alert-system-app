@@ -9,11 +9,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile_app/main.dart';
+import 'package:mobile_app/features/user/data/sources/user_api_service.dart';
+import 'package:mobile_app/features/user/data/sources/user_local_service.dart';
+import 'package:mobile_app/features/user/domain/user_repository.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    final apiService = UserApiService(baseUrl: 'https://example.com');
+    final localService = UserLocalService();
+    final userRepository = UserRepository(api: apiService, local: localService);
+
+    await tester.pumpWidget(MyApp(userRepository: userRepository));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

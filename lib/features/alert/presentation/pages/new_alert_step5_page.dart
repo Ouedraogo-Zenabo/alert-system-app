@@ -6,7 +6,7 @@
 
 /*
 import 'package:flutter/material.dart';
-import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
+import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page_fixed.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step2_page.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step3_page.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step4_page.dart';
@@ -174,9 +174,8 @@ void _onSuivant() {
 
         // ---- Modifier Localisation → Étape 1 ----
         onEditLocalisation: () {
-          Navigator.pop(context);  
-          Navigator.push(context,
-            MaterialPageRoute(builder: (_) => NewAlertStep1Page(alert: widget.alert)));
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => NewAlertStep1PageFixed(alert: widget.alert)));
         },
 
         // ---- Modifier Événement → Étape 2 ----
@@ -546,7 +545,7 @@ void _onSuivant() {
 
 import 'package:flutter/material.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step6_page.dart';
-import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
+import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page_fixed.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step2_page.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step3_page.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step4_page.dart';
@@ -670,8 +669,7 @@ class _NewAlertStep5PageState extends State<NewAlertStep5Page> {
           alert: widget.alert,
           onEditLocalisation: () {
             Navigator.pop(context);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => NewAlertStep1Page(alert: AlertModel())
-));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => NewAlertStep1PageFixed(alert: AlertModel())));
           },
           onEditEvent: () {
             Navigator.pop(context);

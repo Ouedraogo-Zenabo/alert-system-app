@@ -1,6 +1,6 @@
 /*import 'package:flutter/material.dart';
 import 'package:mobile_app/features/alert/domain/alert_model.dart';
-import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
+import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page_fixed.dart';
 
 
  // Import de la page de création d'alerte
@@ -228,9 +228,9 @@ class AlertItem extends StatelessWidget {
 ///////////////////////////////////////////////////////////////////
 
 import 'package:flutter/material.dart';
-import 'package:mobile_app/features/alert/domain/alert_model.dart';
 import 'package:mobile_app/features/alert/presentation/pages/alert_list_page.dart';
 import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
+import 'package:mobile_app/features/alert/domain/alert_model.dart';
 import 'package:mobile_app/features/user/domain/user_repository.dart';
 import 'package:mobile_app/features/user/presentation/pages/profile_page.dart';
 
@@ -291,7 +291,7 @@ class _DashboardPageState extends State<DashboardPage> {
 }
 
 class _DashboardHome extends StatelessWidget {
-  const _DashboardHome({super.key});
+  const _DashboardHome();
 
   @override
   Widget build(BuildContext context) {
@@ -322,10 +322,7 @@ class _DashboardHome extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                       NewAlertStep1Page(alert: AlertModel())
-
-
+                    builder: (context) => NewAlertStep1Page(alert: AlertModel()),
                   ),
                 );
               },
