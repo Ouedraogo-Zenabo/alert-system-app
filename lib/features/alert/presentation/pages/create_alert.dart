@@ -94,7 +94,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
         return;
       }
 
-      final url = Uri.parse("http://197.239.116.77:3000/api/v1/zones?type=COMMUNE");
+      final url = Uri.parse("http://197.239.116.77:3000/api/v1/zones?type=COMMUNE&limit=200");
       final headers = <String, String>{
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -103,7 +103,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
       print("📡 GET zones avec Authorization header...");
       final response = await http.get(url, headers: headers);
 
-      //print("✅ Zones Response Status: ${response.statusCode}");
+      print("✅ Zones Response Status: ${response.statusCode}");
       print("📦 Zones Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
