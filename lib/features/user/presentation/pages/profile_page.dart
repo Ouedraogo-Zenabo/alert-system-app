@@ -1,11 +1,11 @@
-/*import 'package:flutter/material.dart';
-import 'package:mobile_app/features/user/data/models/user_model.dart';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:mobile_app/features/user/domain/user_repository.dart';
+import 'package:mobile_app/features/user/data/sources/user_local_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile_app/features/auth/presentation/pages/login_page.dart';
 
-
-/// ------------------------------------------------------------
-/// Page Profil — UI principale
-/// ------------------------------------------------------------
 class ProfilePage extends StatefulWidget {
   final UserRepository userRepository;
   final String token;
@@ -21,283 +21,273 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  UserModel? user;
   bool loading = true;
+  String? error;
+
+  // Données utilisateur
+  String name = "";
+  String email = "";
+  String phone = "";
+  String commune = "";
+  String role = "Point Focal Communal";
+
+  // Statistiques
+  int totalAlerts = 0;
+  int alertsThisMonth = 0;
+  int alertsTransmitted = 0;
+  List<int> monthlyStats = [0, 0, 0, 0]; // 4 derniers mois
+
+  // Paramètres
+  bool notificationsEnabled = true;
+  bool darkModeEnabled = false;
+  bool autoSyncEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadSettings();
   }
 
-  /// Charge profil depuis API puis local
-  Future<void> _loadProfile() async {
+  Future<String?> _getToken() async {
     try {
-      final fetchedUser =
-          await widget.userRepository.getUserProfile(widget.token);
+      return await UserLocalService().getAccessToken();
+    } catch (_) {
+      return widget.token;
+    }
+  }
 
+  Future<String?> _refreshAccessToken() async {
+    try {
+      final refresh = await UserLocalService().getRefreshToken();
+      if (refresh == null || refresh.isEmpty) return null;
+      final url = Uri.parse("http://197.239.116.77:3000/api/v1/auth/refresh");
+      final resp = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refresh}),
+      );
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        final data = decoded is Map ? (decoded['data'] ?? decoded) : decoded;
+        final access = data is Map ? (data['accessToken'] ?? data['access_token']) : null;
+        final refreshOut = data is Map ? (data['refreshToken'] ?? data['refresh_token']) : null;
+        if (access is String && access.isNotEmpty) {
+          await UserLocalService().saveTokens(
+            access,
+            refreshOut is String && refreshOut.isNotEmpty ? refreshOut : refresh,
+          );
+          return access;
+        }
+      }
+    } catch (e) {
+      debugPrint('Refresh token error: $e');
+    }
+    return null;
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+
+    try {
+      String? token = await _getToken();
+      if (token == null || token.isEmpty) {
+        setState(() {
+          error = "Token manquant";
+          loading = false;
+        });
+        return;
+      }
+
+      final url = Uri.parse("http://197.239.116.77:3000/api/v1/auth/profile");
+      Map<String, String> headers(String t) => {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $t',
+          };
+
+      var resp = await http.get(url, headers: headers(token));
+
+      if (resp.statusCode == 401) {
+        final newToken = await _refreshAccessToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          token = newToken;
+          resp = await http.get(url, headers: headers(token));
+        }
+      }
+
+      if (resp.statusCode != 200) {
+        setState(() {
+          error = "Erreur serveur (${resp.statusCode})";
+          loading = false;
+        });
+        return;
+      }
+
+      final decoded = jsonDecode(resp.body);
+      Map<String, dynamic>? userData;
+
+      if (decoded is Map) {
+        userData = (decoded['data'] ?? decoded['user'] ?? decoded) as Map<String, dynamic>?;
+      }
+
+      if (userData != null) {
+        setState(() {
+          name = "${userData!['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
+          if (name.isEmpty) name = userData['name'] ?? userData['username'] ?? "Utilisateur";
+          email = userData['email'] ?? "";
+          phone = userData['phone'] ?? userData['phoneNumber'] ?? "";
+          commune = userData['commune'] ?? userData['communeName'] ?? userData['zoneName'] ?? "";
+          role = userData['role'] ?? "Point Focal Communal";
+
+          // Stats (adapter selon votre API)
+          totalAlerts = (userData['totalAlerts'] ?? 0) as int;
+          alertsThisMonth = (userData['alertsThisMonth'] ?? 0) as int;
+          alertsTransmitted = (userData['alertsTransmitted'] ?? 0) as int;
+
+          // Stats mensuelles (si disponibles)
+          if (userData['monthlyStats'] is List) {
+            monthlyStats = (userData['monthlyStats'] as List).cast<int>();
+          }
+
+          loading = false;
+        });
+      } else {
+        setState(() {
+          error = "Format de réponse invalide";
+          loading = false;
+        });
+      }
+    } catch (e) {
       setState(() {
-        user = fetchedUser;
+        error = "Erreur réseau: $e";
         loading = false;
       });
-    } catch (e) {
-      setState(() => loading = false);
     }
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+      darkModeEnabled = prefs.getBool('dark_mode_enabled') ?? false;
+      autoSyncEnabled = prefs.getBool('auto_sync_enabled') ?? true;
+    });
+  }
+
+  Future<void> _saveSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Déconnexion"),
+        content: const Text("Êtes-vous sûr de vouloir vous déconnecter ?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Annuler"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Déconnexion"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        String? token = await _getToken();
+        if (token != null && token.isNotEmpty) {
+          final url = Uri.parse("http://197.239.116.77:3000/api/v1/auth/logout");
+          await http.post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          ).timeout(const Duration(seconds: 5));
+        }
+
+        // Supprimer les tokens
+        await UserLocalService().clearUser();
+
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const login_page()),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        debugPrint('Logout error: $e');
+        if (mounted) {
+          // Forcer la suppression locale des tokens même en cas d'erreur
+          await UserLocalService().clearUser();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const login_page()),
+            (route) => false,
+          );
+        }
+      }
+    }
+  }
+
+  String _getInitials() {
+    if (name.isEmpty) return "?";
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return "${parts[0][0]}${parts[1][0]}".toUpperCase();
+    }
+    return name[0].toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text("Erreur de chargement du profil.")),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildPersonalInfo(),
-            const SizedBox(height: 20),
-            _buildStats(),
-            const SizedBox(height: 20),
-            _buildSettings(),
-            const SizedBox(height: 20),
-            _buildLogoutButton(),
-          ],
+      return Scaffold(
+        backgroundColor: Colors.grey.shade100,
+        appBar: AppBar(
+          title: const Text("Profil"),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0.3,
         ),
-      ),
-    );
-  }
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
-  // ------------------------------
-  // HEADER (Nom + initiales)
-  // ------------------------------
-  Widget _buildHeader() {
-    String initials = user!.name.isNotEmpty
-        ? user!.name[0].toUpperCase()
-        : "?";
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 26),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade700,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: Colors.white,
-            child: Text(initials,
-                style: const TextStyle(
-                    fontSize: 28,
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold)),
+    if (error != null) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade100,
+        appBar: AppBar(
+          title: const Text("Profil"),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0.3,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(error!, style: const TextStyle(color: Colors.red)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadProfile,
+                child: const Text("Réessayer"),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            user!.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Text(
-            "Point Focal Communal",
-            style: TextStyle(color: Colors.white70),
-          )
-        ],
-      ),
-    );
-  }
+        ),
+      );
+    }
 
-  // ------------------------------
-  // INFORMATIONS PERSONNELLES
-  // ------------------------------
-  Widget _buildPersonalInfo() {
-    return _buildCard(
-      title: "Informations personnelles",
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _infoRow(Icons.phone, user!.phone),
-          _infoRow(Icons.email, user!.email),
-          _infoRow(Icons.location_on, user!.commune),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.grey.shade600),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(text,
-                style: const TextStyle(fontSize: 15, color: Colors.black87)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ------------------------------
-  // STATISTIQUES
-  // ------------------------------
-  Widget _buildStats() {
-    return _buildCard(
-      title: "Statistiques personnelles",
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _statRow("Total", user!.totalAlerts),
-          _statRow("Ce mois", user!.alertsThisMonth),
-          _statRow("Transmises", user!.alertsTransmitted),
-        ],
-      ),
-    );
-  }
-
-  Widget _statRow(String label, int value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 15)),
-          const Spacer(),
-          Text(value.toString(),
-              style: const TextStyle(fontSize: 15, color: Colors.black54)),
-        ],
-      ),
-    );
-  }
-
-  // ------------------------------
-  // PARAMÈTRES
-  // ------------------------------
-  Widget _buildSettings() {
-    return _buildCard(
-      title: "Paramètres",
-      content: Column(
-        children: const [
-          _SettingSwitch(title: "Notifications"),
-          _SettingSwitch(title: "Mode sombre"),
-          _SettingSwitch(title: "Synchronisation auto"),
-        ],
-      ),
-    );
-  }
-
-  // ------------------------------
-  // BOUTON DÉCONNEXION
-  // ------------------------------
-  Widget _buildLogoutButton() {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red.shade600,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
-      ),
-      onPressed: () async {
-        await widget.userRepository.logout();
-
-        // Retour à la page login
-        Navigator.pushNamedAndRemoveUntil(
-            context, "/login", (route) => false);
-      },
-      child: const Text("Déconnexion"),
-    );
-  }
-
-  // ------------------------------
-  // CARD (boîte blanche arrondie)
-  // ------------------------------
-  Widget _buildCard({required String title, required Widget content}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 3))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 12),
-          content
-        ],
-      ),
-    );
-  }
-}
-
-/// ------------------------------------------------------------
-/// Composant Switch pour les paramètres
-/// ------------------------------------------------------------
-class _SettingSwitch extends StatefulWidget {
-  final String title;
-  const _SettingSwitch({super.key, required this.title});
-
-  @override
-  State<_SettingSwitch> createState() => _SettingSwitchState();
-}
-
-class _SettingSwitchState extends State<_SettingSwitch> {
-  bool value = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return SwitchListTile(
-      title: Text(widget.title),
-      value: value,
-      onChanged: (v) => setState(() => value = v),
-    );
-  }
-}*/
-
-
-
-
-////////////////////////////////////////////////////////////////////
-library;
-
-
-
-import 'package:flutter/material.dart';
-import 'package:mobile_app/features/user/domain/user_repository.dart';
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key, required UserRepository userRepository, required String token});
-
-  @override
-  Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -307,290 +297,297 @@ class ProfilePage extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0.3,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadProfile,
+          ),
+        ],
       ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // -------------------------------------------------------
-            // 1. CARTE PROFIL (photo, nom, rôle)
-            // -------------------------------------------------------
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade700,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  // Cercle avatar avec initiales
-                  CircleAvatar(
-                    radius: width * 0.12,
-                    backgroundColor: Colors.white,
-                    child: const Text(
-                      "MK",
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+      body: RefreshIndicator(
+        onRefresh: _loadProfile,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 1. CARTE PROFIL
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 30),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade700,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: width * 0.12,
+                      backgroundColor: Colors.white,
+                      child: Text(
+                        _getInitials(),
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  const Text(
-                    "Kaboré Marie",
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 10),
+                    Text(
+                      name.isNotEmpty ? name : "Utilisateur",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  const Text(
-                    "Point Focal Communal",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
+                    const SizedBox(height: 5),
+                    Text(
+                      role,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 20),
 
-            const SizedBox(height: 20),
-
-            // -------------------------------------------------------
-            // 2. INFORMATIONS PERSONNELLES
-            // -------------------------------------------------------
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 10,
-                    color: Colors.black12,
-                    offset: Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Informations personnelles",
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
+              // 2. INFORMATIONS PERSONNELLES
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 10,
+                      color: Colors.black12,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Informations personnelles",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  _infoRow(
-                    icon: Icons.phone_outlined,
-                    title: "Téléphone",
-                    value: "+226 75 23 45 67",
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  _infoRow(
-                    icon: Icons.email_outlined,
-                    title: "Email",
-                    value: "m.kabore@commune-korsimoro.bf",
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  _infoRow(
-                    icon: Icons.location_on_outlined,
-                    title: "Commune",
-                    value: "Korsimoro, Sanmatenga",
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    if (phone.isNotEmpty)
+                      _infoRow(
+                        icon: Icons.phone_outlined,
+                        title: "Téléphone",
+                        value: phone,
+                      ),
+                    if (phone.isNotEmpty) const SizedBox(height: 15),
+                    if (email.isNotEmpty)
+                      _infoRow(
+                        icon: Icons.email_outlined,
+                        title: "Email",
+                        value: email,
+                      ),
+                    if (email.isNotEmpty) const SizedBox(height: 15),
+                    if (commune.isNotEmpty)
+                      _infoRow(
+                        icon: Icons.location_on_outlined,
+                        title: "Commune",
+                        value: commune,
+                      ),
+                    if (phone.isEmpty && email.isEmpty && commune.isEmpty)
+                      const Text(
+                        "Aucune information disponible",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 25),
 
-            const SizedBox(height: 25),
-
-            // -------------------------------------------------------
-            // 3. Statistiques personnelles
-            // -------------------------------------------------------
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 10,
-                    color: Colors.black12,
-                    offset: Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Statistiques personnelles",
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
+              // 3. STATISTIQUES
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 10,
+                      color: Colors.black12,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Statistiques personnelles",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // --- Mini graph (barres)
-                  SizedBox(
-                    height: 120,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    const SizedBox(height: 15),
+                    if (monthlyStats.isNotEmpty && monthlyStats.any((v) => v > 0))
+                      SizedBox(
+                        height: 120,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (monthlyStats.length > 3)
+                              _bar(label: "J-3", value: monthlyStats[0].toDouble()),
+                            if (monthlyStats.length > 2)
+                              _bar(label: "J-2", value: monthlyStats[1].toDouble()),
+                            if (monthlyStats.length > 1)
+                              _bar(label: "J-1", value: monthlyStats[2].toDouble()),
+                            if (monthlyStats.isNotEmpty)
+                              _bar(label: "Mois", value: monthlyStats[3].toDouble()),
+                          ],
+                        ),
+                      ),
+                    if (monthlyStats.isEmpty || !monthlyStats.any((v) => v > 0))
+                      const SizedBox(
+                        height: 120,
+                        child: Center(
+                          child: Text(
+                            "Aucune donnée mensuelle disponible",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    const Divider(height: 30),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _bar(label: "Juil", value: 3),
-                        _bar(label: "Août", value: 4),
-                        _bar(label: "Sept", value: 6),
-                        _bar(label: "Oct", value: 7),
+                        _statNumber(label: "Total", value: totalAlerts.toString()),
+                        _statNumber(label: "Ce mois", value: alertsThisMonth.toString()),
+                        _statNumber(label: "Transmises", value: alertsTransmitted.toString()),
                       ],
-                    ),
-                  ),
-
-                  const Divider(height: 30),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _statNumber(label: "Total", value: "23"),
-                      _statNumber(label: "Ce mois", value: "8"),
-                      _statNumber(label: "Transmises", value: "15"),
-                    ],
-                  )
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // -------------------------------------------------------
-            // 4. PARAMÈTRES
-            // -------------------------------------------------------
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 10,
-                    color: Colors.black12,
-                    offset: Offset(0, 4),
-                  )
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Paramètres",
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  _settingSwitch(
-                    icon: Icons.notifications_none,
-                    title: "Notifications",
-                    subtitle: "Recevoir les notifications push",
-                    value: true,
-                  ),
-
-                  _settingSwitch(
-                    icon: Icons.dark_mode_outlined,
-                    title: "Mode sombre",
-                    subtitle: "Thème de l'application",
-                    value: false,
-                  ),
-
-                  _settingSwitch(
-                    icon: Icons.sync_outlined,
-                    title: "Synchronisation auto",
-                    subtitle: "Synchroniser automatiquement",
-                    value: true,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // -------------------------------------------------------
-            // 5. BOUTON DECONNEXION
-            // -------------------------------------------------------
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text(
-                  "Déconnexion",
-                  style: TextStyle(color: Colors.red),
+                    )
+                  ],
                 ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: () {},
               ),
-            ),
+              const SizedBox(height: 25),
 
-            const SizedBox(height: 30),
-          ],
+              // 4. PARAMÈTRES
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 10,
+                      color: Colors.black12,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Paramètres",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    _settingSwitch(
+                      icon: Icons.notifications_none,
+                      title: "Notifications",
+                      subtitle: "Recevoir les notifications push",
+                      value: notificationsEnabled,
+                      onChanged: (v) {
+                        setState(() => notificationsEnabled = v);
+                        _saveSetting('notifications_enabled', v);
+                      },
+                    ),
+                    _settingSwitch(
+                      icon: Icons.dark_mode_outlined,
+                      title: "Mode sombre",
+                      subtitle: "Thème de l'application",
+                      value: darkModeEnabled,
+                      onChanged: (v) {
+                        setState(() => darkModeEnabled = v);
+                        _saveSetting('dark_mode_enabled', v);
+                      },
+                    ),
+                    _settingSwitch(
+                      icon: Icons.sync_outlined,
+                      title: "Synchronisation auto",
+                      subtitle: "Synchroniser automatiquement",
+                      value: autoSyncEnabled,
+                      onChanged: (v) {
+                        setState(() => autoSyncEnabled = v);
+                        _saveSetting('auto_sync_enabled', v);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 25),
+
+              // 5. BOUTON DÉCONNEXION
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.logout, color: Colors.red),
+                  label: const Text(
+                    "Déconnexion",
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: _logout,
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ===========================================================================
-  // Widgets UI réutilisables
-  // ===========================================================================
-
-  static Widget _infoRow({required IconData icon, required String title, required String value}) {
+  Widget _infoRow({required IconData icon, required String title, required String value}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 22, color: Colors.grey.shade700),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: const TextStyle(fontSize: 13, color: Colors.grey)),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
         )
       ],
     );
   }
 
-  static Widget _bar({required String label, required double value}) {
+  Widget _bar({required String label, required double value}) {
     return Expanded(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -598,7 +595,7 @@ class ProfilePage extends StatelessWidget {
           AnimatedContainer(
             duration: const Duration(milliseconds: 500),
             width: 20,
-            height: value * 10,
+            height: value > 0 ? (value * 10).clamp(10, 100) : 0,
             decoration: BoxDecoration(
               color: Colors.blue.shade700,
               borderRadius: BorderRadius.circular(6),
@@ -611,7 +608,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  static Widget _statNumber({required String label, required String value}) {
+  Widget _statNumber({required String label, required String value}) {
     return Column(
       children: [
         Text(
@@ -627,33 +624,41 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  static Widget _settingSwitch({
+  Widget _settingSwitch({
     required IconData icon,
     required String title,
     required String subtitle,
     required bool value,
+    required ValueChanged<bool> onChanged,
   }) {
-    return Row(
-      children: [
-        Icon(icon, size: 25, color: Colors.grey.shade700),
-        const SizedBox(width: 12),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 15)),
-              Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 25, color: Colors.grey.shade700),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 15)),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
           ),
-        ),
-
-        Switch(
-          value: value,
-          onChanged: (v) {},
-        ),
-      ],
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
     );
+  }
+}
+
+class login_page extends StatelessWidget {
+  const login_page();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold();
   }
 }
 

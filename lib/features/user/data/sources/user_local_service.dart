@@ -47,4 +47,11 @@ class UserLocalService {
     await prefs.remove(accessTokenKey);
     await prefs.remove(refreshTokenKey);
   }
+/*     Future<void> clearTokens() async {
+    // Logic to clear tokens, e.g., remove from shared preferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('access_token');
+    await prefs.remove('refresh_token');
+  } */
 }
+

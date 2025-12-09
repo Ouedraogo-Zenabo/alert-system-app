@@ -103,7 +103,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
       print("📡 GET zones avec Authorization header...");
       final response = await http.get(url, headers: headers);
 
-      print("✅ Zones Response Status: ${response.statusCode}");
+      //print("✅ Zones Response Status: ${response.statusCode}");
       print("📦 Zones Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
