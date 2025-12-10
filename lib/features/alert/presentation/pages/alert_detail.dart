@@ -93,8 +93,11 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
       final decoded = jsonDecode(resp.body);
       Map<String, dynamic>? obj;
       if (decoded is Map) {
-        if (decoded['data'] is Map) obj = Map<String, dynamic>.from(decoded['data']);
-        else obj = Map<String, dynamic>.from(decoded);
+        if (decoded['data'] is Map) {
+          obj = Map<String, dynamic>.from(decoded['data']);
+        } else {
+          obj = Map<String, dynamic>.from(decoded);
+        }
       }
 
       setState(() {

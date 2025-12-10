@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:mobile_app/features/user/domain/user_repository.dart';
 import 'package:mobile_app/features/user/data/sources/user_local_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mobile_app/features/auth/presentation/pages/login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final UserRepository userRepository;
@@ -654,7 +653,7 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 class login_page extends StatelessWidget {
-  const login_page();
+  const login_page({super.key});
 
   @override
   Widget build(BuildContext context) {

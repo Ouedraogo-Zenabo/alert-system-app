@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mobile_app/features/alert/presentation/pages/alert_list_page.dart';
 import 'package:mobile_app/features/alert/presentation/pages/create_alert.dart';
-import 'package:mobile_app/features/alert/presentation/pages/new_alert_step1_page.dart';
-import 'package:mobile_app/features/alert/domain/alert_model.dart';
 import 'package:mobile_app/features/user/domain/user_repository.dart';
 import 'package:mobile_app/features/user/presentation/pages/profile_page.dart';
 import 'package:mobile_app/features/user/data/sources/user_local_service.dart';
@@ -62,7 +60,7 @@ class _DashboardHome extends StatefulWidget {
   final UserRepository userRepository;
   final String token;
 
-  const _DashboardHome({super.key, required this.userRepository, required this.token});
+  const _DashboardHome({required this.userRepository, required this.token});
 
   @override
   State<_DashboardHome> createState() => _DashboardHomeState();
@@ -179,8 +177,9 @@ class _DashboardHomeState extends State<_DashboardHome> {
       if (decoded is List) {
         items = decoded;
       } else if (decoded is Map) {
-        if (decoded['data'] is List) items = List<dynamic>.from(decoded['data']);
-        else if (decoded['alerts'] is List) items = List<dynamic>.from(decoded['alerts']);
+        if (decoded['data'] is List) {
+          items = List<dynamic>.from(decoded['data']);
+        } else if (decoded['alerts'] is List) items = List<dynamic>.from(decoded['alerts']);
         else if (decoded['data'] is Map && decoded['data']['items'] is List) items = List<dynamic>.from(decoded['data']['items']);
         else if (decoded['data'] is Map && decoded['data']['items'] == null && decoded['data'].containsKey('total')) {
           // sometimes data contains items under another key
@@ -335,7 +334,7 @@ class _DashboardHomeState extends State<_DashboardHome> {
                 startDate: startDate,
                 affected: affected,
               );
-            }).toList(),
+            }),
         ]),
         ),
       ),

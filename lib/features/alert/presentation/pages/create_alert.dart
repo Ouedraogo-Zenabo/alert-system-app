@@ -402,7 +402,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
                                     labelText: "Type d'alerte",
                                     border: OutlineInputBorder(),
                                   ),
-                                  value: form["type"],
+                                  initialValue: form["type"],
                                   items: alertTypes
                                       .map((e) => DropdownMenuItem(
                                           value: e["value"], child: Text(e["label"]!)))
@@ -415,7 +415,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
                                     labelText: "Sévérité",
                                     border: OutlineInputBorder(),
                                   ),
-                                  value: form["severity"],
+                                  initialValue: form["severity"],
                                   items: severityLevels
                                       .map((e) => DropdownMenuItem(
                                           value: e["value"], child: Text(e["label"]!)))
@@ -432,7 +432,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
                                       labelText: "Type d'alerte",
                                       border: OutlineInputBorder(),
                                     ),
-                                    value: form["type"],
+                                    initialValue: form["type"],
                                     items: alertTypes
                                         .map((e) => DropdownMenuItem(
                                             value: e["value"], child: Text(e["label"]!)))
@@ -447,7 +447,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
                                       labelText: "Sévérité",
                                       border: OutlineInputBorder(),
                                     ),
-                                    value: form["severity"],
+                                    initialValue: form["severity"],
                                     items: severityLevels
                                         .map((e) => DropdownMenuItem(
                                             value: e["value"], child: Text(e["label"]!)))
@@ -474,7 +474,7 @@ class _CreateAlertPageState extends State<CreateAlertPage> {
                             border: OutlineInputBorder(),
                           ),
                           isExpanded: true,
-                          value: form["zoneId"],
+                          initialValue: form["zoneId"],
                           items: zones
                               .map((z) => DropdownMenuItem(
                                     value: z["id"],
